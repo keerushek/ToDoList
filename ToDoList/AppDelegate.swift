@@ -12,17 +12,17 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-    var testNavigationController: UINavigationController?
+    var navigationController: UINavigationController?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        testNavigationController = UINavigationController()
-        let testViewController: TaskListViewController = TaskListViewController()
-        self.testNavigationController?.pushViewController(testViewController, animated: false)
+        navigationController = UINavigationController()
+        let taskViewController: TaskListViewController = TaskListViewController()
+        self.navigationController?.pushViewController(taskViewController, animated: false)
         
         self.window = UIWindow(frame: UIScreen.main.bounds)
         
-        self.window?.rootViewController = testNavigationController
+        self.window?.rootViewController = self.navigationController
         
         self.window?.backgroundColor = UIColor.white
         
