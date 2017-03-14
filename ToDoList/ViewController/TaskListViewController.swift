@@ -8,12 +8,15 @@
 
 import Foundation
 import UIKit
+import RealmSwift
 
 class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     var tableView: UITableView = UITableView()
     let animals = ["Horse", "Cow", "Camel", "Sheep", "Goat"]
     let cellReuseIdentifier = "taskTableViewCell"
+    var currentCreateAction:UIAlertAction!
+    var taskLists : Results<ToDoTask>!
     
     var sortButton = UIButton(type: .custom)
     
@@ -44,8 +47,6 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         
         self.navigationItem.leftBarButtonItem = item2
        
-        
-        
         tableView.frame = CGRect(x:0,y:0,width:self.view!.frame.size.width,height:self.view!.frame.height)
         tableView.delegate = self
         tableView.dataSource = self
@@ -56,15 +57,26 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         self.view.addSubview(tableView)
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        readTasksAndUpdateUI()
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return animals.count
+        
+        //Nil Check
+        if let taskLists = taskLists{
+            return taskLists.count
+        }
+        return 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell:UITableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as UITableViewCell!
         
-        cell.textLabel?.text = animals[indexPath.row]
+        let list = taskLists[indexPath.row]
         
+        cell.textLabel?.text = list.taskName
+        cell.detailTextLabel?.text = list.taskDescription
         return cell
     }
     
@@ -72,8 +84,16 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         print("You tapped cell number \(indexPath.row).")
     }
     
+    func readTasksAndUpdateUI(){
+        
+        taskLists = uiRealm.objects(ToDoTask.self)
+        tableView.reloadData()
+    }
+    
     func addNew() {
         print("Add new Task")
+        
+        self.displayAlertToAddTask(nil)
     }
     
     func sortBy(button:UIButton){
@@ -93,5 +113,56 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         
         
     }
+    
+    //Create or Edit Task
+    func displayAlertToAddTask(_ updatedList:ToDoTask!){
+        
+        let title = "New Task"
+        let doneTitle = "Create"
+        
+        let alertController = UIAlertController(title: title, message: "Write the name of your task with description", preferredStyle: UIAlertControllerStyle.alert)
+        let createAction = UIAlertAction(title: doneTitle, style: UIAlertActionStyle.default) { (action) -> Void in
+            
+            let taskName = alertController.textFields?.first?.text
+            
+            let taskDescription = alertController.textFields?.last?.text
+            
+            if updatedList != nil{
+                // update mode
+                try! uiRealm.write{
+                    updatedList.taskName = taskName!
+                    self.readTasksAndUpdateUI()
+                }
+            }
+            else{
+                
+                let newTask = ToDoTask()
+                newTask.taskName = taskName!
+                newTask.taskDescription = taskDescription!
+                
+                try! uiRealm.write{
+                    
+                    uiRealm.add(newTask)
+                    self.readTasksAndUpdateUI()
+                }
+            }
+            
+        }
+        
+        alertController.addAction(createAction)
+        
+        alertController.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.cancel, handler: nil))
+        
+        alertController.addTextField { (textField) -> Void in
+            textField.placeholder = "Task Name"
+        }
+        alertController.addTextField { (textField) -> Void in
+            textField.placeholder = "Task Description"
+        }
+        
+        self.present(alertController, animated: true, completion: nil)
+    }
+
+    
     
 }
