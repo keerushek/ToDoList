@@ -13,7 +13,6 @@ import RealmSwift
 class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
     var tableView: UITableView = UITableView()
-    let animals = ["Horse", "Cow", "Camel", "Sheep", "Goat"]
     let cellReuseIdentifier = "taskTableViewCell"
     var currentCreateAction:UIAlertAction!
     var taskLists : Results<ToDoTask>!
@@ -38,7 +37,7 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         self.navigationItem.rightBarButtonItem = item1
         
         sortButton = UIButton(type: .custom)
-        sortButton.setTitle("Name", for: UIControlState.normal)
+        sortButton.setTitle("Date", for: UIControlState.normal)
         sortButton.setTitleColor(UIColor.black, for: UIControlState.normal)
         sortButton.titleLabel?.font = UIFont.systemFont(ofSize: 14)
         sortButton.frame = CGRect(x: 0, y: 0, width: 40, height: 30)
@@ -87,7 +86,7 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
     func readTasksAndUpdateUI(){
         
         taskLists = uiRealm.objects(ToDoTask.self)
-        tableView.reloadData()
+        self.reloadBasedOnSortSelected()
     }
     
     func addNew() {
@@ -96,22 +95,38 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         self.displayAlertToAddTask(nil)
     }
     
+    //Change the UI and Call ReloadBased on Sort
     func sortBy(button:UIButton){
         
         //Sort Based on selected Parameter
         if((button.title(for: UIControlState.normal)) == "Name"){
             
             sortButton.setTitle("Date", for: UIControlState.normal)
-            //Query to fetch Tasks based on Date
             
         }else if((button.title(for: UIControlState.normal)) == "Date"){
             
             sortButton.setTitle("Name", for: UIControlState.normal)
-            //Query to fetch Tasks based on Name
             
         }
+        self.reloadBasedOnSortSelected()
         
-        
+    }
+    
+    func reloadBasedOnSortSelected() {
+        //Sort Based on selected Parameter
+        if((sortButton.title(for: UIControlState.normal)) == "Name"){
+            //Query to fetch Tasks based on CreatedAt
+            taskLists = taskLists!.sorted(byKeyPath: "taskName", ascending: true)
+            
+            
+        }else if((sortButton.title(for: UIControlState.normal)) == "Date"){
+            
+            //Query to fetch Tasks based on TaskName
+            taskLists = taskLists!.sorted(byKeyPath: "taskCreatedAt", ascending: true)
+            
+        }
+        //Reload the table to make sort changes
+        tableView.reloadData()
     }
     
     //Create or Edit Task
