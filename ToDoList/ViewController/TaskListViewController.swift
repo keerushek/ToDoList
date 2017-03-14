@@ -10,15 +10,15 @@ import Foundation
 import UIKit
 import RealmSwift
 
-class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate,UISearchResultsUpdating{
+    
+    var taskLists : Results<ToDoTask>!
+    let searchController = UISearchController(searchResultsController: nil)
     
     var tableView: UITableView = UITableView()
     let cellReuseIdentifier = "taskTableViewCell"
-    var currentCreateAction:UIAlertAction!
-    var taskLists : Results<ToDoTask>!
-    
     var sortButton = UIButton(type: .custom)
-    
+    var currentCreateAction:UIAlertAction!
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -51,7 +51,10 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseIdentifier)
         
-        
+        searchController.searchResultsUpdater = self
+        searchController.dimsBackgroundDuringPresentation = false
+        definesPresentationContext = true
+        tableView.tableHeaderView = searchController.searchBar
         
         self.view.addSubview(tableView)
     }
@@ -178,6 +181,12 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         self.present(alertController, animated: true, completion: nil)
     }
 
-    
-    
+    //Search Bar Delegates
+    //Search TaskName and TaskDescription
+    func updateSearchResults(for searchController: UISearchController) {
+        
+        taskLists = uiRealm.objects(ToDoTask.self).filter("taskName contains [c] '\(searchController.searchBar.text!)' OR taskDescription contains [c] '\(searchController.searchBar.text!)'")
+        
+        self.reloadBasedOnSortSelected()
+    }
 }
