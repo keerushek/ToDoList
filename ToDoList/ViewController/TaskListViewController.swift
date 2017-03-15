@@ -10,12 +10,13 @@ import Foundation
 import UIKit
 import RealmSwift
 
+
 class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate,UISearchResultsUpdating{
     
     var taskLists : Results<ToDoTask>!
     let searchController = UISearchController(searchResultsController: nil)
     
-    var tableView: UITableView = UITableView()
+    var todoTableView: UITableView = UITableView()
     let cellReuseIdentifier = "taskTableViewCell"
     var sortButton = UIButton(type: .custom)
     var currentCreateAction:UIAlertAction!
@@ -46,17 +47,17 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         
         self.navigationItem.leftBarButtonItem = item2
        
-        tableView.frame = CGRect(x:0,y:0,width:self.view!.frame.size.width,height:self.view!.frame.height)
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseIdentifier)
+        todoTableView.frame = CGRect(x:0,y:0,width:self.view!.frame.size.width,height:self.view!.frame.height)
+        todoTableView.delegate = self
+        todoTableView.dataSource = self
+        todoTableView.register(ToDoTableViewCell.self, forCellReuseIdentifier: cellReuseIdentifier)
         
         searchController.searchResultsUpdater = self
         searchController.dimsBackgroundDuringPresentation = false
         definesPresentationContext = true
-        tableView.tableHeaderView = searchController.searchBar
+        todoTableView.tableHeaderView = searchController.searchBar
         
-        self.view.addSubview(tableView)
+        self.view.addSubview(todoTableView)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -73,17 +74,40 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell:UITableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier) as UITableViewCell!
+        let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier, for: indexPath) as! ToDoTableViewCell
         
         let list = taskLists[indexPath.row]
         
-        cell.textLabel?.text = list.taskName
-        cell.detailTextLabel?.text = list.taskDescription
+        cell.taskNameLabel.text = list.taskName
+        cell.taskDescriptionLabel.text = list.taskDescription
+        cell.createdAtLabel.text = DateFormatter.localizedString(from: list.taskCreatedAt as Date, dateStyle: .short, timeStyle: .short)
+        if(list.isCompleted){
+            cell.doneImage.image = UIImage(named: "isDone")
+        }
+
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print("You tapped cell number \(indexPath.row).")
+    }
+    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 60
+    }
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        if (editingStyle == UITableViewCellEditingStyle.delete) {
+            // handle delete (by removing the data from your array and updating the tableview)
+            let listToBeDeleted = taskLists[indexPath.row]
+            try! uiRealm.write{
+                
+                uiRealm.delete(listToBeDeleted)
+                self.readTasksAndUpdateUI()
+            }
+        }
     }
     
     func readTasksAndUpdateUI(){
@@ -129,7 +153,7 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
             
         }
         //Reload the table to make sort changes
-        tableView.reloadData()
+        todoTableView.reloadData()
     }
     
     //Create or Edit Task
