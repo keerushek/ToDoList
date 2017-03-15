@@ -81,6 +81,7 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         cell.taskNameLabel.text = list.taskName
         cell.taskDescriptionLabel.text = list.taskDescription
         cell.createdAtLabel.text = DateFormatter.localizedString(from: list.taskCreatedAt as Date, dateStyle: .short, timeStyle: .short)
+        cell.doneImage.image = nil
         if(list.isCompleted){
             cell.doneImage.image = UIImage(named: "isDone")
         }
@@ -89,7 +90,8 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print("You tapped cell number \(indexPath.row).")
+        
+        self.displayAlertShowTask(taskLists[indexPath.row])
     }
     
     func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
@@ -117,7 +119,6 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func addNew() {
-        print("Add new Task")
         
         self.displayAlertToAddTask(nil)
     }
@@ -155,29 +156,71 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         //Reload the table to make sort changes
         todoTableView.reloadData()
     }
-    
+    //Display Task
+    func displayAlertShowTask(_ updatedTask:ToDoTask!){
+        let alertController = UIAlertController(title: updatedTask.taskName, message: "\(updatedTask.taskDescription) created at \(updatedTask.taskCreatedAt)", preferredStyle: UIAlertControllerStyle.alert)
+        let completeAction = UIAlertAction(title: "Complete Task", style: UIAlertActionStyle.default) { (action) -> Void in
+            
+            if updatedTask != nil{
+                // update mode
+                try! uiRealm.write{
+                    updatedTask.isCompleted = true
+                    self.readTasksAndUpdateUI()
+                }
+            }
+            
+        }
+        if updatedTask.isCompleted{
+            completeAction.isEnabled = false
+        }
+        
+        alertController.addAction(completeAction)
+        
+        
+       let updateAction = UIAlertAction(title: "Update", style: UIAlertActionStyle.default){ (action) -> Void in
+            
+            if updatedTask != nil{
+                // update mode
+                self.displayAlertToAddTask(updatedTask)
+            }
+            
+        }
+        alertController.addAction(updateAction)
+        
+        alertController.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.cancel, handler: nil))
+        
+        self.present(alertController, animated: true, completion: nil)
+    }
     //Create or Edit Task
-    func displayAlertToAddTask(_ updatedList:ToDoTask!){
+    func displayAlertToAddTask(_ updatedTask:ToDoTask!){
         
-        let title = "New Task"
-        let doneTitle = "Create"
+        var title = "New Task"
+        var doneTitle = "Create"
+        var titleDescription = "Write the name of your task with description"
         
-        let alertController = UIAlertController(title: title, message: "Write the name of your task with description", preferredStyle: UIAlertControllerStyle.alert)
+        if updatedTask != nil{
+            title = "Update Task"
+            doneTitle = "Update"
+            titleDescription = "Make changes to Task"
+        }
+        
+        let alertController = UIAlertController(title: title, message: titleDescription, preferredStyle: UIAlertControllerStyle.alert)
         let createAction = UIAlertAction(title: doneTitle, style: UIAlertActionStyle.default) { (action) -> Void in
             
             let taskName = alertController.textFields?.first?.text
             
             let taskDescription = alertController.textFields?.last?.text
             
-            if updatedList != nil{
+            if updatedTask != nil{
                 // update mode
                 try! uiRealm.write{
-                    updatedList.taskName = taskName!
+                    updatedTask.taskName = taskName!
+                    updatedTask.taskDescription = taskDescription!
                     self.readTasksAndUpdateUI()
                 }
             }
             else{
-                
+                //Create New Task
                 let newTask = ToDoTask()
                 newTask.taskName = taskName!
                 newTask.taskDescription = taskDescription!
@@ -190,16 +233,24 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
             }
             
         }
-        
         alertController.addAction(createAction)
         
         alertController.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.cancel, handler: nil))
         
         alertController.addTextField { (textField) -> Void in
-            textField.placeholder = "Task Name"
+            if updatedTask != nil{
+                textField.text = updatedTask.taskName
+            }else{
+                textField.placeholder = "Task Name"
+            }
+            
         }
         alertController.addTextField { (textField) -> Void in
-            textField.placeholder = "Task Description"
+            if updatedTask != nil{
+                textField.text = updatedTask.taskDescription
+            }else{
+                textField.placeholder = "Task Description"
+            }
         }
         
         self.present(alertController, animated: true, completion: nil)
